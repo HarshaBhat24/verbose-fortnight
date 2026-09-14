@@ -1,0 +1,10 @@
+# Mindpex Freelance VAPT Engagement Rubric
+
+- API Security & Route Mapping: Full-scope enumeration of 61 Next.js API routes and 3 FastAPI Python service routers using ffuf, Nmap, curl, and Burp Suite
+- Authentication Bypass & Account Takeover: Account takeover via forced password override in org invitation acceptance and support portal invite flows; unverified account login bypass; auto-provisioning middleware membership insertion without token verification
+- Multi-Tenant Isolation & BOLA/IDOR: Broken Object-Level Authorization (BOLA) testing across multi-tenant boundaries (cross-tenant deletion via foreign organization UUID, mass deletion via fuzzy name-matching and SQL wildcard injection in delete handlers)
+- Out-of-Band SSRF & Advanced Injection: SSRF via unvalidated webhook URL parameters with interactsh OAST callback server confirmation; SQL wildcard injection (full_name.ilike.% fuzzy filter) enabling bulk employee record deletion or modification vs parameterized query remediation
+- AI / LLM Endpoint Security: Direct prompt injection on Groq/Cerebras LLM routes; indirect prompt injection via long-term persistent employee memory poisoning (ICP memory pipeline); unvalidated context payload injection; raw exception disclosure returning infrastructure traces; zero rate-limiting on high-cost LLM endpoints
+- PostgreSQL Row-Level Security (RLS) Review: Static analysis of 47 database migration files (V1–V47); identifying USING (true) and WITH CHECK clauses granting unauthenticated/anon role access to security configurations (MFA, SMTP, webhooks, bank details); missing TO clauses defaulting to PUBLIC; SECURITY DEFINER function privilege escalation
+- HTTP Security Headers & CSP Traps: Content Security Policy (CSP) enforcement ('unsafe-inline' script-src neutralization); Next.js middleware execution trap where rate limiting and security header middleware was wired to proxy.ts instead of middleware.ts, leaving perimeter controls inactive
+- Remediation & Technical Reporting: Producing 7 domain-specific audit reports with 30+ CVSS v3.1 scored findings and code-level remediation in TypeScript, Python, and SQL migrations

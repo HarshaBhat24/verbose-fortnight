@@ -4,7 +4,8 @@ const state = {
   userContextSummary: '',
   history: [], // array of { question: string, answer: string }
   currentQuestion: '',
-  turnCount: 0
+  turnCount: 0,
+  lastModelUsed: ''
 };
 
 // DOM Elements
@@ -63,8 +64,8 @@ async function apiCall(endpoint, payload) {
 async function handleStartInterview(e) {
   e.preventDefault();
   const description = intakeDescription.value.trim();
-  if (description.length < 10) {
-    showError('Please provide a more detailed description (at least 10 characters).');
+  if (description.length < 5) {
+    showError('Please provide a prompt or description (e.g. "Ask me something about Epicor").');
     return;
   }
 
@@ -77,8 +78,9 @@ async function handleStartInterview(e) {
     state.userContextSummary = res.userContextSummary || description;
     state.history = [];
     state.turnCount = 1;
+    state.lastModelUsed = res.modelUsed || 'Gemini';
 
-    // Display Model used
+    // Display Model used in top bar
     if (res.modelUsed) {
       modelNameEl.textContent = res.modelUsed;
       modelBadge.classList.remove('hidden');
@@ -96,8 +98,8 @@ async function handleStartInterview(e) {
     const firstQuestion = res.firstTurn?.next_question || 'Can you walk me through your primary methodology on this target?';
     state.currentQuestion = firstQuestion;
 
-    // Render turn 1 question card
-    renderNewQuestionTurn(state.turnCount, firstQuestion);
+    // Render turn 1 question card with model pill
+    renderNewQuestionTurn(state.turnCount, firstQuestion, state.lastModelUsed);
 
   } catch (err) {
     showError(`Failed to start interview: ${err.message}`);
@@ -123,12 +125,14 @@ async function handleSubmitAnswer(e) {
     });
 
     const critiqueData = res.result || {};
+    const modelUsed = res.modelUsed || state.lastModelUsed;
+    state.lastModelUsed = modelUsed;
 
     // 1. Render User's Answer in the active turn container
     renderUserAnswerInCurrentTurn(state.turnCount, answerText);
 
-    // 2. Render Critique & Verdict in the active turn container
-    renderFeedbackInCurrentTurn(state.turnCount, critiqueData);
+    // 2. Render Critique & Verdict in the active turn container (including detailed feedback)
+    renderFeedbackInCurrentTurn(state.turnCount, critiqueData, modelUsed);
 
     // 3. Save turn to client history
     state.history.push({
@@ -136,9 +140,9 @@ async function handleSubmitAnswer(e) {
       answer: answerText
     });
 
-    // 4. Update model badge if available
-    if (res.modelUsed) {
-      modelNameEl.textContent = res.modelUsed;
+    // 4. Update top bar model badge if available
+    if (modelUsed) {
+      modelNameEl.textContent = modelUsed;
     }
 
     // 5. Clear answer input
@@ -148,7 +152,7 @@ async function handleSubmitAnswer(e) {
     if (critiqueData.next_question) {
       state.turnCount++;
       state.currentQuestion = critiqueData.next_question;
-      renderNewQuestionTurn(state.turnCount, critiqueData.next_question);
+      renderNewQuestionTurn(state.turnCount, critiqueData.next_question, modelUsed);
     }
 
   } catch (err) {
@@ -165,7 +169,7 @@ function renderContextBadges(types) {
     .join('');
 }
 
-function renderNewQuestionTurn(turnNum, questionText) {
+function renderNewQuestionTurn(turnNum, questionText, modelUsed) {
   const turnDiv = document.createElement('div');
   turnDiv.className = 'turn-item';
   turnDiv.id = `turn-${turnNum}`;
@@ -174,6 +178,7 @@ function renderNewQuestionTurn(turnNum, questionText) {
     <div class="card question-card">
       <div class="question-header">
         <span>⚡ Question ${turnNum}</span>
+        ${modelUsed ? `<span class="turn-model-badge">🤖 ${escapeHtml(modelUsed)}</span>` : ''}
       </div>
       <div class="question-text">${escapeHtml(questionText)}</div>
     </div>
@@ -192,13 +197,13 @@ function renderUserAnswerInCurrentTurn(turnNum, answerText) {
   const placeholder = turnDiv.querySelector('.user-answer-placeholder');
   placeholder.innerHTML = `
     <div class="card user-answer-card">
-      <div class="answer-header">Your Answer:</div>
+      <div class="answer-header">Your Response:</div>
       <div class="answer-text">${escapeHtml(answerText)}</div>
     </div>
   `;
 }
 
-function renderFeedbackInCurrentTurn(turnNum, feedback) {
+function renderFeedbackInCurrentTurn(turnNum, feedback, modelUsed) {
   const turnDiv = document.getElementById(`turn-${turnNum}`);
   if (!turnDiv) return;
 
@@ -210,6 +215,7 @@ function renderFeedbackInCurrentTurn(turnNum, feedback) {
 
   let feedbackContentHTML = '';
 
+  // Flagged Claim
   if (feedback.flagged_claim) {
     feedbackContentHTML += `
       <div class="detail-block">
@@ -219,29 +225,70 @@ function renderFeedbackInCurrentTurn(turnNum, feedback) {
     `;
   }
 
-  if (feedback.why_wrong) {
+  // Detailed Feedback Paragraph
+  const mainAnalysisText = feedback.detailed_feedback || feedback.why_wrong;
+  if (mainAnalysisText) {
     feedbackContentHTML += `
       <div class="detail-block">
-        <span class="detail-label wrong-label">Critique / Gap Identified:</span>
-        <div class="detail-content">${escapeHtml(feedback.why_wrong)}</div>
+        <span class="detail-label ${verdict === 'correct' ? 'strong-label' : 'wrong-label'}">Detailed Technical Evaluation:</span>
+        <div class="detail-content">${escapeHtml(mainAnalysisText)}</div>
       </div>
     `;
   }
 
-  if (feedback.what_a_strong_answer_includes) {
+  // Strengths List
+  if (Array.isArray(feedback.strengths) && feedback.strengths.length > 0) {
+    const strengthsItems = feedback.strengths
+      .map(s => `<li><span class="green-icon">✓</span> ${escapeHtml(s)}</li>`)
+      .join('');
     feedbackContentHTML += `
       <div class="detail-block">
-        <span class="detail-label strong-label">What a Strong Answer Includes:</span>
+        <span class="detail-label strong-label">Technical Strengths Identified:</span>
+        <ul class="feedback-list strengths-list">${strengthsItems}</ul>
+      </div>
+    `;
+  }
+
+  // Gaps & Omissions List
+  if (Array.isArray(feedback.gaps_and_omissions) && feedback.gaps_and_omissions.length > 0) {
+    const gapsItems = feedback.gaps_and_omissions
+      .map(g => `<li><span class="red-icon">⚠️</span> ${escapeHtml(g)}</li>`)
+      .join('');
+    feedbackContentHTML += `
+      <div class="detail-block">
+        <span class="detail-label wrong-label">Key Gaps & Technical Omissions:</span>
+        <ul class="feedback-list gaps-list">${gapsItems}</ul>
+      </div>
+    `;
+  }
+
+  // What a Strong Answer Includes
+  if (feedback.what_a_strong_answer_includes) {
+    const sectionTitle = verdict === 'example_requested' ? 'Generic Real-World Example & Explanation:' : 'Key Requirements for a Senior Answer:';
+    feedbackContentHTML += `
+      <div class="detail-block">
+        <span class="detail-label strong-label">${sectionTitle}</span>
         <div class="detail-content">${escapeHtml(feedback.what_a_strong_answer_includes)}</div>
       </div>
     `;
   }
 
+  // Improved Answer Sample
+  if (feedback.improved_answer_sample) {
+    feedbackContentHTML += `
+      <div class="detail-block">
+        <span class="detail-label sample-label">💡 Sample Senior-Level Response:</span>
+        <div class="sample-box">${escapeHtml(feedback.improved_answer_sample)}</div>
+      </div>
+    `;
+  }
+
   placeholder.innerHTML = `
-    <div class="card feedback-card">
+    <div class="card feedback-card ${escapeHtml(verdict)}">
       <div class="verdict-header">
         <span class="verdict-badge ${escapeHtml(verdict)}">${escapeHtml(verdictLabel)}</span>
         <span class="rubric-item">Rubric: ${escapeHtml(rubricItem)}</span>
+        ${modelUsed ? `<span class="turn-model-badge">🤖 Graded by ${escapeHtml(modelUsed)}</span>` : ''}
       </div>
       <div class="feedback-details">
         ${feedbackContentHTML}
@@ -256,6 +303,7 @@ function formatVerdictLabel(verdict) {
     case 'partially_correct': return '⚠️ Partially Correct';
     case 'incorrect': return '✗ Incorrect';
     case 'too_vague_to_grade': return '❓ Too Vague to Grade';
+    case 'example_requested': return '💡 Generic Example Provided';
     default: return verdict.toUpperCase();
   }
 }
@@ -267,6 +315,7 @@ function resetSession() {
   state.history = [];
   state.currentQuestion = '';
   state.turnCount = 0;
+  state.lastModelUsed = '';
 
   interviewFeed.innerHTML = '';
   intakeDescription.value = '';
