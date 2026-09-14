@@ -34,6 +34,10 @@
   --verdict-vague-border: #D97706;
   --verdict-vague-text: #FCD34D;
 
+  --verdict-example-bg: rgba(6, 182, 212, 0.15);
+  --verdict-example-border: #06B6D4;
+  --verdict-example-text: #67E8F9;
+
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
@@ -359,6 +363,7 @@ textarea:focus {
 .question-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   font-weight: 600;
   color: var(--accent-cyan);
@@ -399,10 +404,15 @@ textarea:focus {
   border: 1px solid var(--border-color);
 }
 
+.feedback-card.example_requested {
+  border-left: 4px solid var(--accent-cyan);
+}
+
 .verdict-header {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 0.75rem;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border-color);
@@ -442,6 +452,12 @@ textarea:focus {
   color: var(--verdict-vague-text);
 }
 
+.verdict-badge.example_requested {
+  background: var(--verdict-example-bg);
+  border-color: var(--verdict-example-border);
+  color: var(--verdict-example-text);
+}
+
 .rubric-item {
   font-family: var(--font-mono);
   font-size: 0.8rem;
@@ -451,16 +467,28 @@ textarea:focus {
   border-radius: var(--radius-sm);
 }
 
+/* Per-Turn Model Badge */
+.turn-model-badge {
+  font-family: var(--font-mono);
+  font-size: 0.725rem;
+  color: #A7F3D0;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  margin-left: auto;
+}
+
 .feedback-details {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: 1rem;
 }
 
 .detail-block {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
 }
 
 .detail-label {
@@ -477,9 +505,54 @@ textarea:focus {
   color: var(--accent-emerald);
 }
 
+.detail-label.sample-label {
+  color: var(--accent-cyan);
+}
+
 .detail-content {
-  font-size: 0.925rem;
+  font-size: 0.95rem;
   color: var(--text-main);
+  line-height: 1.6;
+}
+
+/* Strengths & Gaps Lists */
+.feedback-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-left: 0.25rem;
+}
+
+.feedback-list li {
+  font-size: 0.9rem;
+  color: var(--text-main);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.green-icon {
+  color: var(--accent-emerald);
+  font-weight: bold;
+}
+
+.red-icon {
+  color: var(--accent-red);
+  font-size: 0.85rem;
+}
+
+/* Sample Senior Answer Box */
+.sample-box {
+  background: rgba(6, 182, 212, 0.06);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: var(--radius-md);
+  padding: 0.875rem 1.1rem;
+  font-family: var(--font-sans);
+  font-size: 0.925rem;
+  color: #E0F2FE;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 /* Active Turn Input Card */
