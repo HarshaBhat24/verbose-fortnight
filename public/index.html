@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pentest Interview Prep | Technical Simulator</title>
+  <meta name="description" content="Stateless AI-powered technical interviewer for Penetration Testing, VAPT, AD, Cloud, and CTF prep.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">🛡️</div>
+        <div>
+          <h1>Pentest Interview Prep</h1>
+          <p class="tagline">Stateless Technical Interview Simulator for Security Engineers</p>
+        </div>
+      </div>
+      <div id="model-badge" class="model-badge hidden">
+        <span class="dot"></span> <span id="model-name">Gemini 2.5 Pro</span>
+      </div>
+    </header>
+
+    <main class="app-container">
+      <!-- Error / Status Notification -->
+      <div id="error-banner" class="error-banner hidden" role="alert">
+        <span class="error-icon">⚠️</span>
+        <span id="error-message">An error occurred.</span>
+        <button id="close-error" class="close-btn" aria-label="Close error">&times;</button>
+      </div>
+
+      <!-- VIEW 1: Start / Intake Form -->
+      <section id="intake-section" class="card intake-card">
+        <h2>Define Your Experience Scope</h2>
+        <p class="description">
+          Describe a real engagement, lab, CTF, or assessment you performed. The interviewer will analyze your scope, select rubrics, and grill you on technical depth.
+        </p>
+
+        <form id="intake-form" onsubmit="return false;">
+          <div class="form-group">
+            <label for="intake-description">Project / VAPT / Assessment Description</label>
+            <textarea
+              id="intake-description"
+              rows="6"
+              placeholder="e.g. Conducted a black-box web app pentest on a banking portal. Discovered an IDOR in transactions, boolean-based SQLi in search fields, and JWT algorithm confusion. Verified findings manually and provided CVSS v3.1 scoring."
+              required
+            ></textarea>
+          </div>
+
+          <div class="preset-suggestions">
+            <span class="preset-label">Quick Prompts:</span>
+            <button type="button" class="preset-chip" data-text="Conducted a web application security assessment on a SaaS platform. Tested authentication, authorization (IDOR), XSS, and SQL injection using Burp Suite and manual verification.">Web App Pentest</button>
+            <button type="button" class="preset-chip" data-text="Executed Active Directory internal penetration test. Performed BloodHound enumeration, Kerberoasting, AS-REP Roasting, and exploited misconfigured GPO permissions to reach Domain Admin.">AD / Internal</button>
+            <button type="button" class="preset-chip" data-text="Performed AWS cloud security audit. Evaluated IAM permissions, S3 bucket policies, metadata service (IMDSv1 vs IMDSv2) SSRF pathways, and CloudTrail logging coverage.">Cloud Audit</button>
+            <button type="button" class="preset-chip" data-text="Completed HackTheBox / TryHackMe CTF lab machine. Escalated privileges from initial foothold via web exploit to root through kernel misconfigurations.">CTF / Lab</button>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="start-btn" class="btn btn-primary">
+              <span class="btn-text">Start Technical Interview</span>
+              <span class="spinner hidden"></span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- VIEW 2: Active Interview Workspace -->
+      <section id="interview-section" class="interview-section hidden">
+        <!-- Session Context Header -->
+        <div class="card context-card">
+          <div class="context-header">
+            <div>
+              <span class="context-label">Detected Domain Scopes:</span>
+              <div id="detected-types" class="badges-container"></div>
+            </div>
+            <button id="reset-btn" class="btn btn-outline-danger btn-sm">End & Start Over</button>
+          </div>
+          <div class="context-body">
+            <strong>Candidate Background Summary:</strong>
+            <p id="context-summary-text"></p>
+          </div>
+        </div>
+
+        <!-- Conversation / Q&A Stream -->
+        <div id="interview-feed" class="feed-container"></div>
+
+        <!-- Current Answer Input Card -->
+        <div id="active-turn-card" class="card active-turn-card">
+          <div class="turn-header">
+            <h3>Your Technical Response</h3>
+            <span class="hint">Be specific: name precise payloads, tools, commands, and verification steps.</span>
+          </div>
+
+          <form id="answer-form" onsubmit="return false;">
+            <div class="form-group">
+              <textarea
+                id="answer-input"
+                rows="5"
+                placeholder="Type your detailed technical explanation here..."
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="submit-answer-btn" class="btn btn-primary">
+                <span class="btn-text">Submit Answer</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Stateless architecture — No database required. Session history remains in client memory.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/interview/start.js": {
+      "maxDuration": 60
+    },
+    "api/interview/turn.js": {
+      "maxDuration": 60
+    }
+  }
+}
