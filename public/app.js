@@ -53,7 +53,19 @@ async function apiCall(endpoint, payload) {
     body: JSON.stringify(payload)
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get('content-type') || '';
+  let data;
+  if (contentType.includes('application/json')) {
+    data = await response.json();
+  } else {
+    const rawText = await response.text();
+    try {
+      data = JSON.parse(rawText);
+    } catch (e) {
+      throw new Error(rawText || `Server error (HTTP ${response.status})`);
+    }
+  }
+
   if (!response.ok) {
     throw new Error(data.error || `Server returned HTTP ${response.status}`);
   }
