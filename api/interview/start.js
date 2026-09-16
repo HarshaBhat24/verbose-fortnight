@@ -1,5 +1,5 @@
 const { handlePreflight, sendJson } = require("../../lib/http");
-const { DETECTION_PROMPT, buildTurnSystemPrompt } = require("../../lib/rubrics");
+const { buildCombinedStartPrompt } = require("../../lib/rubrics");
 const { generateWithFallback } = require("../../lib/modelClient");
 
 // POST body: { description: "I did a black-box web app pentest on..." }
@@ -20,26 +20,30 @@ module.exports = async (req, res) => {
     return sendJson(res, 400, { error: "Provide a 'description' of what you did (project/exp/VAPT/lab)." });
   }
 
-  const detectionPrompt = DETECTION_PROMPT.replace("{DESCRIPTION}", description.trim());
+  const startPrompt = buildCombinedStartPrompt(description.trim());
 
   try {
-    // Detection call — no rubric needed yet, just classification.
-    const { data: detection, modelUsed } = await generateWithFallback(
-      "You are a precise classifier. Output strict JSON only.",
-      detectionPrompt
+    // Single consolidated LLM call for classification + opening question
+    const { data, modelUsed } = await generateWithFallback(
+      "You are a precise cybersecurity technical interviewer. Output strict JSON only.",
+      startPrompt
     );
 
-    const types = Array.isArray(detection.types) && detection.types.length
-      ? detection.types
-      : ["web_app"]; // safe default rather than failing the request
-    const userContextSummary = detection.user_context_summary || description.trim().slice(0, 300);
-
-    // Kick off the actual interview with one opening question.
-    const systemPrompt = buildTurnSystemPrompt({ userContextSummary, types });
-    const { data: firstTurn } = await generateWithFallback(
-      systemPrompt,
-      "This is the start of the interview. There is no prior answer to grade yet — just ask your first question. Set verdict-related fields to null."
-    );
+    const types = Array.isArray(data.types) && data.types.length
+      ? data.types
+      : ["web_app"];
+    const userContextSummary = data.userContextSummary || data.user_context_summary || description.trim().slice(0, 300);
+    const firstTurn = data.firstTurn || {
+      rubric_item_addressed: null,
+      verdict: null,
+      flagged_claim: null,
+      detailed_feedback: null,
+      strengths: [],
+      gaps_and_omissions: [],
+      what_a_strong_answer_includes: null,
+      improved_answer_sample: null,
+      next_question: data.next_question || "Can you walk me through your primary methodology on this target?"
+    };
 
     return sendJson(res, 200, {
       types,
@@ -51,3 +55,4 @@ module.exports = async (req, res) => {
     return sendJson(res, 502, { error: err.message });
   }
 };
+
