@@ -11,7 +11,7 @@ const { generateWithFallback } = require("../../lib/modelClient");
 // }
 // Returns: { critique_and_next: {...schema from rubrics.js...}, modelUsed }
 //
-// Still stateless — the full history is passed in every time and used only to
+// Still stateless - the full history is passed in every time and used only to
 // build this one prompt. Nothing is written to disk/DB.
 
 module.exports = async (req, res) => {

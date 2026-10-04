@@ -38,6 +38,10 @@
   --verdict-example-border: #06B6D4;
   --verdict-example-text: #67E8F9;
 
+  --verdict-dontknow-bg: rgba(139, 92, 246, 0.15);
+  --verdict-dontknow-border: #8B5CF6;
+  --verdict-dontknow-text: #C4B5FD;
+
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
@@ -263,6 +267,18 @@ textarea:focus {
   background: rgba(239, 68, 68, 0.1);
 }
 
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  color: var(--verdict-dontknow-text);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.6);
+  transform: translateY(-1px);
+}
+
 .btn-sm {
   padding: 0.4rem 0.8rem;
   font-size: 0.8rem;
@@ -408,6 +424,15 @@ textarea:focus {
   border-left: 4px solid var(--accent-cyan);
 }
 
+.feedback-card.dont_know {
+  border-left: 4px solid var(--verdict-dontknow-border);
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.07) 0%,
+    var(--bg-card) 60%
+  );
+}
+
 .verdict-header {
   display: flex;
   flex-wrap: wrap;
@@ -456,6 +481,13 @@ textarea:focus {
   background: var(--verdict-example-bg);
   border-color: var(--verdict-example-border);
   color: var(--verdict-example-text);
+}
+
+.verdict-badge.dont_know {
+  background: var(--verdict-dontknow-bg);
+  border-color: var(--verdict-dontknow-border);
+  color: var(--verdict-dontknow-text);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.25);
 }
 
 .rubric-item {
@@ -507,6 +539,10 @@ textarea:focus {
 
 .detail-label.sample-label {
   color: var(--accent-cyan);
+}
+
+.detail-label.reveal-label {
+  color: var(--verdict-dontknow-text);
 }
 
 .detail-content {

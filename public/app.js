@@ -26,6 +26,7 @@ const interviewFeed = document.getElementById('interview-feed');
 const answerForm = document.getElementById('answer-form');
 const answerInput = document.getElementById('answer-input');
 const submitAnswerBtn = document.getElementById('submit-answer-btn');
+const dontKnowBtn = document.getElementById('dont-know-btn');
 
 const errorBanner = document.getElementById('error-banner');
 const errorMessage = document.getElementById('error-message');
@@ -41,6 +42,7 @@ presetChips.forEach(chip => {
 
 intakeForm.addEventListener('submit', handleStartInterview);
 answerForm.addEventListener('submit', handleSubmitAnswer);
+dontKnowBtn.addEventListener('click', handleDontKnow);
 resetBtn.addEventListener('click', resetSession);
 closeError.addEventListener('click', hideError);
 
@@ -120,6 +122,59 @@ async function handleStartInterview(e) {
   }
 }
 
+// Handler: I Don't Know
+async function handleDontKnow() {
+  setLoading(dontKnowBtn, true);
+  setLoading(submitAnswerBtn, true);
+
+  try {
+    const res = await apiCall('/api/interview/turn', {
+      types: state.types,
+      userContextSummary: state.userContextSummary,
+      history: state.history,
+      latestAnswer: '__DONT_KNOW__'
+    });
+
+    const critiqueData = res.result || {};
+    const modelUsed = res.modelUsed || state.lastModelUsed;
+    state.lastModelUsed = modelUsed;
+
+    // 1. Show "I Don't Know" as user's response in the turn
+    renderUserAnswerInCurrentTurn(state.turnCount, '🤷 I don\'t know - show me the answer.');
+
+    // 2. Render the reveal feedback card
+    renderFeedbackInCurrentTurn(state.turnCount, critiqueData, modelUsed);
+
+    // 3. Save turn to history, tagged as skipped
+    state.history.push({
+      question: state.currentQuestion,
+      answer: '__DONT_KNOW__',
+      skipped: true
+    });
+
+    // 4. Update model badge
+    if (modelUsed) {
+      modelNameEl.textContent = modelUsed;
+    }
+
+    // 5. Clear answer input
+    answerInput.value = '';
+
+    // 6. Spawn related follow-up question
+    if (critiqueData.next_question) {
+      state.turnCount++;
+      state.currentQuestion = critiqueData.next_question;
+      renderNewQuestionTurn(state.turnCount, critiqueData.next_question, modelUsed);
+    }
+
+  } catch (err) {
+    showError(`Failed to reveal answer: ${err.message}`);
+  } finally {
+    setLoading(dontKnowBtn, false);
+    setLoading(submitAnswerBtn, false);
+  }
+}
+
 // Handler: Submit Turn Answer
 async function handleSubmitAnswer(e) {
   e.preventDefault();
@@ -127,6 +182,7 @@ async function handleSubmitAnswer(e) {
   if (!answerText) return;
 
   setLoading(submitAnswerBtn, true);
+  dontKnowBtn.disabled = true;
 
   try {
     const res = await apiCall('/api/interview/turn', {
@@ -171,6 +227,7 @@ async function handleSubmitAnswer(e) {
     showError(`Failed to submit turn: ${err.message}`);
   } finally {
     setLoading(submitAnswerBtn, false);
+    dontKnowBtn.disabled = false;
   }
 }
 
@@ -240,9 +297,11 @@ function renderFeedbackInCurrentTurn(turnNum, feedback, modelUsed) {
   // Detailed Feedback Paragraph
   const mainAnalysisText = feedback.detailed_feedback || feedback.why_wrong;
   if (mainAnalysisText) {
+    const evalLabelClass = verdict === 'correct' ? 'strong-label' : verdict === 'dont_know' ? 'reveal-label' : 'wrong-label';
+    const evalTitle = verdict === 'dont_know' ? '✅ Correct Answer (What You Should Have Said):' : 'Detailed Technical Evaluation:';
     feedbackContentHTML += `
       <div class="detail-block">
-        <span class="detail-label ${verdict === 'correct' ? 'strong-label' : 'wrong-label'}">Detailed Technical Evaluation:</span>
+        <span class="detail-label ${evalLabelClass}">${evalTitle}</span>
         <div class="detail-content">${escapeHtml(mainAnalysisText)}</div>
       </div>
     `;
@@ -276,7 +335,10 @@ function renderFeedbackInCurrentTurn(turnNum, feedback, modelUsed) {
 
   // What a Strong Answer Includes
   if (feedback.what_a_strong_answer_includes) {
-    const sectionTitle = verdict === 'example_requested' ? 'Generic Real-World Example & Explanation:' : 'Key Requirements for a Senior Answer:';
+    const sectionTitle =
+      verdict === 'example_requested' ? 'Generic Real-World Example & Explanation:' :
+      verdict === 'dont_know' ? '📚 Concept Explanation (The Why & How):' :
+      'Key Requirements for a Senior Answer:';
     feedbackContentHTML += `
       <div class="detail-block">
         <span class="detail-label strong-label">${sectionTitle}</span>
@@ -316,6 +378,7 @@ function formatVerdictLabel(verdict) {
     case 'incorrect': return '✗ Incorrect';
     case 'too_vague_to_grade': return '❓ Too Vague to Grade';
     case 'example_requested': return '💡 Generic Example Provided';
+    case 'dont_know': return '📖 Answer Revealed';
     default: return verdict.toUpperCase();
   }
 }
