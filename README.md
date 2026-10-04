@@ -2,7 +2,7 @@
 
 Stateless technical interview simulator for Penetration Testing, VAPT, Active Directory, Cloud, and CTF prep. Primary model: Gemini 2.5 Pro (free), fallback: Groq (free).
 
-No database required — your frontend holds session state in client memory and re-sends history on each turn.
+No database required - your frontend holds session state in client memory and re-sends history on each turn.
 
 ---
 
